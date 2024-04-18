@@ -1,0 +1,15 @@
+# 全部是linux!!!!
+mxnet-cu110==2.0.0a0
+platformdirs==4.2.0
+numpy==1.24.4
+nvidia-dali-cuda120==1.36.0
+
+torch==2.2.2
+torchvision==0.17.2
+torchaudio==2.2.2
+
+matplotlib==3.7.5
+opencv-python==4.9.0.80
+
+pyyaml
+tqdm
