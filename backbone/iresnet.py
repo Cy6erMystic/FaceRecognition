@@ -151,7 +151,7 @@ class IResNet(nn.Module):
         else:
             return func(x)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         with torch.cuda.amp.autocast(self.fp16):
             x = self.conv1(x)
             x = self.bn1(x)

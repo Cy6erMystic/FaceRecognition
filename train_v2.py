@@ -103,7 +103,7 @@ def train(mc: ModelConfig):
                     opt.step()
                     opt.zero_grad()
             lr_scheduler.step()
-            
+
             with torch.no_grad():
                 loss_am.update(loss.item(), 1)
 

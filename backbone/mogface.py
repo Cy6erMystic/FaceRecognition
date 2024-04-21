@@ -286,7 +286,7 @@ class ResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -481,6 +481,8 @@ class WiderFaceBaseNet(nn.Module):
         self.pred_net = pred_net
         self.phase = phase
         self.out_bb_ft = out_bb_ft
+        if phase == "test":
+            self.fpn.eval()
 
     def forward(self, x):
         feature_list = self.backbone(x)

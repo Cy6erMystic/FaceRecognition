@@ -1,5 +1,7 @@
+from __future__ import annotations
 import os
 import cv2
+import copy
 import torch
 import numpy as np
 from torch import distributed
@@ -18,11 +20,46 @@ def init_distributed(rank: int, world_size: int, addr: str = "tcp://127.0.0.1:12
         world_size=world_size,
     )
 
-class RetianFaceDetection():
+class BaseFaceDetection():
+    VIS_THRES = 0.5
+    TARGET_SHAPE = (256, 256) # H, W
+    @classmethod
+    def _reshape_img(cls, img: np.ndarray) -> np.ndarray:
+        resize = min(cls.TARGET_SHAPE[1] / img.shape[1], cls.TARGET_SHAPE[0] / img.shape[0])
+        if resize != 1:
+            img: np.ndarray = cv2.resize(img, None, None, fx=resize, fy=resize, interpolation=cv2.INTER_LINEAR)
+        return img
+
+    @classmethod
+    def _reshape_bbox(cls, bbox: np.ndarray):
+        h = bbox[3] - bbox[1]
+        w = bbox[2] - bbox[0]
+        if h > w:
+            l = h - w
+            bbox[0] -= l // 2
+            bbox[2] += l - (l // 2)
+        else:
+            l = w - h
+            bbox[1] -= l // 2
+            bbox[3] += l - (l // 2)
+        return bbox
+
+    def split_imgs(self, bboxs: list, img_raw: np.ndarray, square = False):
+        img_raw = copy.deepcopy(img_raw)
+        imgs = []
+        for b in bboxs:
+            if b[4] < self.VIS_THRES:
+                continue
+            b = list(map(int, b))
+            if square:
+                b = self._reshape_bbox(b)
+            img_ = self._reshape_img(img_raw[b[1]:b[3], b[0]:b[2]])
+            imgs.append(img_)
+        return imgs
+
+class RetianFaceDetection(BaseFaceDetection):
     confidence_threshold = 0.02
     nms_threshold = 0.4
-    vis_thres = 0.5
-
     target_size = 1600
     max_size = 2150
     def __init__(self, pretain_model: str = "", device = "cuda:0") -> None:
@@ -56,8 +93,7 @@ class RetianFaceDetection():
         f = lambda x: x.split('module.', 1)[-1] if x.startswith('module.') else x
         pretrained_dict = {f(key): value for key, value in pretrained_dict.items()}
 
-        net.load_state_dict(pretrained_dict,
-                            strict=False)
+        net.load_state_dict(pretrained_dict, strict=False)
         net.eval()
         return net
 
@@ -104,7 +140,7 @@ class RetianFaceDetection():
                             ), dim=1)
         return landms
 
-    def _resize_img(self, img: np.float32):
+    def _resize_img(self, img: np.ndarray):
         im_shape = img.shape
 
         im_size_min = np.min(im_shape[0:2])
@@ -117,8 +153,8 @@ class RetianFaceDetection():
         return img, resize
 
     @torch.no_grad()
-    def calc_bbox(self, path: str):
-        img, resize = self._resize_img(np.float32(cv2.imread(path, cv2.IMREAD_COLOR)))
+    def calc_bbox(self, img_raw):
+        img, resize = self._resize_img(np.float32(img_raw))
 
         im_height, im_width, _ = img.shape
         scale = torch.Tensor([img.shape[1], img.shape[0],
@@ -129,7 +165,10 @@ class RetianFaceDetection():
         img = img.to(self.device)
         scale = scale.to(self.device)
 
-        loc, conf, landms = self.net(img)
+        output: tuple[torch.Tensor] = self.net(img)
+        loc = output[0]
+        conf = output[1]
+        landms = output[2]
 
         priorbox = PriorBox(self.cfg, image_size = (im_height, im_width))
         priors = priorbox.forward()
@@ -139,7 +178,7 @@ class RetianFaceDetection():
         boxes = self._decode(loc.data.squeeze(0), prior_data, self.cfg['variance'])
         boxes = boxes * scale / resize
         boxes = boxes.cpu().numpy()
-        scores = conf.squeeze(0).data.cpu().numpy()[:, 1]
+        scores: np = conf.squeeze(0).data.cpu().numpy()[:, 1]
         landms = self._decode_landm(landms.data.squeeze(0), prior_data, self.cfg['variance'])
         scale1 = torch.Tensor([img.shape[3], img.shape[2],
                                img.shape[3], img.shape[2],
@@ -177,10 +216,10 @@ class RetianFaceDetection():
         dets = np.concatenate((dets, landms), axis=1)
         return dets
 
-    def render_bbox(self, bboxs, path: str):
-        img_raw = cv2.imread(path, cv2.IMREAD_COLOR)
+    def render_bbox(self, bboxs, img_raw):
+        img_raw = copy.deepcopy(img_raw)
         for b in bboxs:
-            if b[4] < self.vis_thres:
+            if b[4] < self.VIS_THRES:
                 continue
             text = "{:.4f}".format(b[4])
             b = list(map(int, b))
@@ -196,17 +235,13 @@ class RetianFaceDetection():
             cv2.circle(img_raw, (b[9], b[10]), 1, (255, 0, 255), 4)
             cv2.circle(img_raw, (b[11], b[12]), 1, (0, 255, 0), 4)
             cv2.circle(img_raw, (b[13], b[14]), 1, (255, 0, 0), 4)
-        # save image
-        file_path = "{}/{}_refint.jpg".format(os.path.dirname(path),
-                                           os.path.basename(path).split(".")[0])
-        cv2.imwrite(file_path, img_raw)
+        return img_raw
 
-class MogFaceDetaction():
+class MogFaceDetaction(BaseFaceDetection):
     pre_nms_top_k = 5000
     max_bbox_per_img = 750
     nms_th = 0.3
     score_th = 0.01
-    vis_thres = 0.5
     def __init__(self, pretain_model: str = "", device = "cuda:2") -> None:
         self.net: WiderFaceBaseNet = self._init_model()
         if isinstance(pretain_model, str) and os.path.exists(pretain_model):
@@ -268,8 +303,8 @@ class MogFaceDetaction():
         return np.concatenate(((anchors[:, :2] + anchors[:, 2:]) / 2 , anchors[:, 2:] - anchors[:, :2] + 1), axis=1)
 
     @torch.no_grad()
-    def calc_bbox(self, path: str):
-        img = np.float32(cv2.imread(path, cv2.IMREAD_COLOR))
+    def calc_bbox(self, img_raw):
+        img = np.float32(img_raw)
         max_im_shrink = (0x7fffffff / 200.0 / (img.shape[0] * img.shape[1])) ** 0.5
         max_im_shrink = 2.2 if max_im_shrink > 2.2 else max_im_shrink
 
@@ -278,7 +313,7 @@ class MogFaceDetaction():
             img = cv2.resize(img, None, None, fx=shrink, fy=shrink, interpolation=cv2.INTER_LINEAR)
         width = img.shape[1]
         height = img.shape[0]
-        
+
         x = torch.from_numpy(img).permute(2, 0, 1)
         x = x.unsqueeze(0)
         out: torch.Tensor = self.net(x.to(self.device))
@@ -290,7 +325,7 @@ class MogFaceDetaction():
         scores = out[0].squeeze(0)
 
         top_k = self.pre_nms_top_k
-        v, idx = scores[:, 0].sort(0)
+        _, idx = scores[:, 0].sort(0)
         idx = idx[-top_k:]
         boxes = boxes[idx]
         scores = scores[idx]
@@ -332,10 +367,10 @@ class MogFaceDetaction():
                 c_dets = c_dets[keep, :]
         return c_dets
 
-    def render_bbox(self, bboxs, path: str):
-        img_raw = cv2.imread(path, cv2.IMREAD_COLOR)
+    def render_bbox(self, bboxs, img_raw: np.ndarray):
+        img_raw = copy.deepcopy(img_raw)
         for b in bboxs:
-            if b[4] < self.vis_thres:
+            if b[4] < self.VIS_THRES:
                 continue
             text = "{:.4f}".format(b[4])
             b = list(map(int, b))
@@ -344,10 +379,7 @@ class MogFaceDetaction():
             cy = b[1] + 12
             cv2.putText(img_raw, text, (cx, cy),
                         cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255))
-        # save image
-        file_path = "{}/{}_mog.jpg".format(os.path.dirname(path),
-                                           os.path.basename(path).split(".")[0])
-        cv2.imwrite(file_path, img_raw)
+        return img_raw
 
 # --------------------------------------------------------
 # Fast R-CNN
@@ -361,10 +393,10 @@ def py_cpu_nms(dets, thresh):
     y1 = dets[:, 1]
     x2 = dets[:, 2]
     y2 = dets[:, 3]
-    scores = dets[:, 4]
+    scores: np = dets[:, 4]
 
     areas = (x2 - x1 + 1) * (y2 - y1 + 1)
-    order = scores.argsort()[::-1]
+    order: np = scores.argsort()[::-1]
 
     keep = []
     while order.size > 0:

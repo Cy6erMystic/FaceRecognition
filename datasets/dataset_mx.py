@@ -10,12 +10,12 @@ from torchvision import transforms
 class MXFaceDataset(Dataset):
     def __init__(self, root_dir):
         super(MXFaceDataset, self).__init__()
-        self.transform = transforms.Compose(
-            [transforms.ToPILImage(),
-             transforms.RandomHorizontalFlip(),
-             transforms.ToTensor(),
-             transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
-             ])
+        self.transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+        ])
         self.root_dir = root_dir
         path_imgrec = os.path.join(root_dir, 'train.rec')
         path_imgidx = os.path.join(root_dir, 'train.idx')
@@ -43,17 +43,8 @@ class MXFaceDataset(Dataset):
 
     def __len__(self):
         return len(self.imgidx)
-    
-    def unpack(self, output: str = "unpack_img"):
-        header, _ = mx.recordio.unpack(self.imgrec.read_idx(0))
 
-        _idx = self.imgidx[5]
+    def unpack(self, _idx: int):
         s = self.imgrec.read_idx(_idx)
         _header, _img = mx.recordio.unpack(s)
-        label = int(_header.label[0])
-        class_path = os.path.join(output, "id_%d" % label)
-        if not os.path.exists(class_path):
-            os.makedirs(class_path)
-        print(_img)
-        with open(os.path.join(class_path, "%d_%d.jpg" % (label, _idx)), "wb") as ff:
-            ff.write(_img)
+        return _header, mx.image.imdecode(_img, to_rgb = 0).asnumpy()
