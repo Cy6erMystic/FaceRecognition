@@ -9,11 +9,10 @@ from configs import getLogger
 logger = getLogger("datasets")
 def parse_img(mx: MXFaceDataset, i: int):
     header, img = mx.unpack(i)
-    if os.path.exists("work_dirs/glint/{}_{}.jpg".format(header.label[0], i)):
+    if os.path.exists("work_dirs/glint/1_{}_{}.jpg".format(header.label[0], i)):
         logger.info("存在: {}".format(i))
         return 0
-    img = cv2.resize(img, None, None, fx=256 / 112, fy=256 / 112, interpolation=cv2.INTER_LINEAR)
-    cv2.imwrite("work_dirs/glint/{}_{}.jpg".format(header.label[0], i), img)
+    cv2.imwrite("work_dirs/glint/1_{}_{}.jpg".format(header.label[0], i), img)
     # open("work_dirs/glint/{}_{}.jpg".format(header.label[0], i), "wb").write(img)
     logger.info("完成: {}/{}".format(i, len(mx.imgidx)))
 

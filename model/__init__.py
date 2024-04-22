@@ -22,7 +22,7 @@ def init_distributed(rank: int, world_size: int, addr: str = "tcp://127.0.0.1:12
 
 class BaseFaceDetection():
     VIS_THRES = 0.5
-    TARGET_SHAPE = (256, 256) # H, W
+    TARGET_SHAPE = (112, 112) # H, W
     @classmethod
     def _reshape_img(cls, img: np.ndarray) -> np.ndarray:
         resize = min(cls.TARGET_SHAPE[1] / img.shape[1], cls.TARGET_SHAPE[0] / img.shape[0])

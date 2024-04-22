@@ -68,7 +68,7 @@ class IResNet(nn.Module):
     fc_scale = 7 * 7
 
     def __init__(self,
-                 block, layers, dropout=0, num_features=512, zero_init_residual=False,
+                 block: IBasicBlock, layers, dropout=0, num_features=512, zero_init_residual=False,
                  groups=1, width_per_group=64, replace_stride_with_dilation=None, fp16=False):
         super(IResNet, self).__init__()
         self.fp16 = fp16
@@ -119,7 +119,7 @@ class IResNet(nn.Module):
                 if isinstance(m, IBasicBlock):
                     nn.init.constant_(m.bn2.weight, 0)
 
-    def _make_layer(self, block, planes, blocks, stride=1, dilate=False):
+    def _make_layer(self, block: IBasicBlock, planes, blocks, stride=1, dilate=False):
         downsample = None
         previous_dilation = self.dilation
         if dilate:

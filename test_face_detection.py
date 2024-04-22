@@ -2,7 +2,7 @@ import cv2
 from model import RetianFaceDetection, MogFaceDetaction
 
 if __name__ == "__main__":
-    img_raw = cv2.imread("work_dirs/face_detection/c2.jpg", cv2.IMREAD_COLOR)
+    img_raw = cv2.imread("work_dirs/face_detection/s1.jpg", cv2.IMREAD_COLOR)
 
     # fd1 = RetianFaceDetection(pretain_model="../pretrain/RetinaFace-R50/Resnet50_Final.pth", device="cuda:1")
     # bboxs1 = fd1.calc_bbox(img_raw)
