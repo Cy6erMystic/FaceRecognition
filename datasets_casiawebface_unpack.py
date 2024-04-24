@@ -3,19 +3,18 @@ import cv2
 from multiprocessing import Manager, Queue, Pool
 
 from datasets.dataset_mx import MXFaceDataset
-from model import RetianFaceDetection, MogFaceDetaction
 from configs import getLogger
 
 logger = getLogger("datasets")
 def parse_index(q: Queue):
-    mx = MXFaceDataset("../../datasets/glint360k")
+    mx = MXFaceDataset("../../datasets/faces_webface_112x112")
     logger.info("加载数据完成")
-    for i in mx.imgidx[17000000:]:
+    for i in mx.imgidx[400000:]:
         q.put(i)
     q.put(None)
 
 def parse_img(m: Queue, c: Queue):
-    mx = MXFaceDataset("../../datasets/glint360k")
+    mx = MXFaceDataset("../../datasets/faces_webface_112x112")
     logger.info("加载数据完成")
     while True:
         i = m.get()
@@ -24,10 +23,10 @@ def parse_img(m: Queue, c: Queue):
             c.put(None, None, None)
             break
         header, img = mx.unpack(i)
-        if os.path.exists("X:\\work_dirs\\glint\\1_{}_{}.jpg".format(header.label[0], i)):
+        if os.path.exists("X:\\work_dirs\\casia\\2_{}_{}.jpg".format(header.label, i)):
             logger.info("存在: {}".format(i))
             continue
-        c.put((header.label[0], i, img, len(mx.imgidx)))
+        c.put((header.label, i, img, len(mx.imgidx)))
         logger.info("加载: {} len: {}".format(i, c.qsize()))
 
 def save_img(c: Queue):
@@ -36,19 +35,22 @@ def save_img(c: Queue):
         if i is None:
             c.put(None, None, None)
             break
-        cv2.imwrite("X:\\work_dirs\\glint\\1_{}_{}.jpg".format(header, i), img)
+        cv2.imwrite("X:\\work_dirs\\casia\\2_{}_{}.jpg".format(header, i), img)
         logger.info("完成: {}/{}".format(i, l))
 
 if __name__ == "__main__":
     with Manager() as ma:
-        if not os.path.exists("X:\\work_dirs\\glint"):
-            os.mkdir("X:\\work_dirs\\glint")
+        if not os.path.exists("X:\\work_dirs\\casia"):
+            os.mkdir("X:\\work_dirs\\casia")
         qi = ma.Queue(maxsize=20)
         qf = ma.Queue(maxsize=20)
         with Pool(processes=11) as p:
             p.apply_async(func=parse_index, args=(qi,))
             p.apply_async(func=parse_img, args=(qi,qf))
             p.apply_async(func=parse_img, args=(qi,qf))
+            p.apply_async(func=parse_img, args=(qi,qf))
+            p.apply_async(func=save_img, args=(qf,))
+            p.apply_async(func=save_img, args=(qf,))
             p.apply_async(func=save_img, args=(qf,))
             p.apply_async(func=save_img, args=(qf,))
             p.apply_async(func=save_img, args=(qf,))
