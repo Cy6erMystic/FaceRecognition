@@ -70,7 +70,7 @@ if __name__ == "__main__":
 
     main({
         "network": "r50",
-        "rec": "/media/s5t/caai2024/datasets/ms1m-retinaface-t1",
+        "rec": "../../datasets/faces_ms1m-retinaface-t1",
         "num_classes": 93431,
         "num_image": 5179510,
         "num_epoch": 20,

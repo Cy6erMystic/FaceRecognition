@@ -3,14 +3,13 @@ import cv2
 from multiprocessing import Manager, Queue, Pool
 
 from datasets.dataset_mx import MXFaceDataset
-from model import RetianFaceDetection, MogFaceDetaction
 from configs import getLogger
 
 logger = getLogger("datasets")
 def parse_index(q: Queue):
     mx = MXFaceDataset("../../datasets/glint360k")
     logger.info("加载数据完成")
-    for i in mx.imgidx[17000000:]:
+    for i in mx.imgidx[2000000:]:
         q.put(i)
     q.put(None)
 
@@ -21,10 +20,10 @@ def parse_img(m: Queue, c: Queue):
         i = m.get()
         if i is None:
             m.put(None)
-            c.put(None, None, None)
+            c.put(None, None, None, None)
             break
         header, img = mx.unpack(i)
-        if os.path.exists("X:\\work_dirs\\glint\\1_{}_{}.jpg".format(header.label[0], i)):
+        if os.path.exists("../../datasets/1/face/1_{}_{}.jpg".format(header.label[0], i)):
             logger.info("存在: {}".format(i))
             continue
         c.put((header.label[0], i, img, len(mx.imgidx)))
@@ -34,15 +33,15 @@ def save_img(c: Queue):
     while True:
         header, i, img, l = c.get()
         if i is None:
-            c.put(None, None, None)
+            c.put(None, None, None, None)
             break
-        cv2.imwrite("X:\\work_dirs\\glint\\1_{}_{}.jpg".format(header, i), img)
+        cv2.imwrite("../../datasets/1/face/1_{}_{}.jpg".format(header, i), img)
         logger.info("完成: {}/{}".format(i, l))
 
 if __name__ == "__main__":
     with Manager() as ma:
-        if not os.path.exists("X:\\work_dirs\\glint"):
-            os.mkdir("X:\\work_dirs\\glint")
+        if not os.path.exists("../../datasets/1/face/"):
+            os.mkdir("../../datasets/1/face/")
         qi = ma.Queue(maxsize=20)
         qf = ma.Queue(maxsize=20)
         with Pool(processes=11) as p:

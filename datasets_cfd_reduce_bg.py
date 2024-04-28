@@ -24,6 +24,7 @@ def parse_img_face(img_q: Queue, device: str = "cuda:0"):
         os.mkdir("work_dirs/CFD")
         os.mkdir("work_dirs/CFD/r")
         os.mkdir("work_dirs/CFD/s")
+    logger.info("等待模型加载")
     fd = MogFaceDetaction(pretain_model = "../pretrain/MogFace/model_140000.pth", device=device)
     while True:
         logger.info("等待新的图片")
@@ -39,7 +40,9 @@ def parse_img_face(img_q: Queue, device: str = "cuda:0"):
             cv2.imwrite("work_dirs/CFD/r/{}_{}".format(i, file_name),
                         im)
         for i, im in enumerate(fd.split_imgs(bboxs, img_content, True)):
-            cv2.imwrite("work_dirs/CFD/s/{}_{}".format(i, file_name),
+            # cv2.imwrite("work_dirs/CFD/s/{}_{}".format(i, file_name),
+            #             im)
+            cv2.imwrite("../../datasets/1/face/{}_{}".format(i, file_name),
                         im)
 
 if __name__ == "__main__":
@@ -51,14 +54,14 @@ if __name__ == "__main__":
 
         with Pool(processes=10) as p:
             p.apply_async(func=list_img_path,
-                          args=("/media/s5t/caai2024/datasets/CFD Version 3.0/Images",
+                          args=("/media/s5t/datasets/CFD Version 3.0/Images",
                                 img_queue))
             p.apply_async(func=parse_img_face,
                           args=(img_queue,
-                                "cuda:0"))
+                                "cuda:1"))
             p.apply_async(func=parse_img_face,
                           args=(img_queue,
-                                "cuda:0"))
+                                "cuda:1"))
             p.apply_async(func=parse_img_face,
                           args=(img_queue,
                                 "cuda:1"))
@@ -67,9 +70,6 @@ if __name__ == "__main__":
                                 "cuda:1"))
             p.apply_async(func=parse_img_face,
                           args=(img_queue,
-                                "cuda:2"))
-            p.apply_async(func=parse_img_face,
-                          args=(img_queue,
-                                "cuda:2"))
+                                "cuda:1"))
             p.close()
             p.join()

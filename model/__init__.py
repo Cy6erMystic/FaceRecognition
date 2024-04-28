@@ -244,9 +244,9 @@ class MogFaceDetaction(BaseFaceDetection):
     score_th = 0.01
     def __init__(self, pretain_model: str = "", device = "cuda:2") -> None:
         self.net: WiderFaceBaseNet = self._init_model()
-        if isinstance(pretain_model, str) and os.path.exists(pretain_model):
-            self.net.load_state_dict(torch.load(pretain_model))
         self.net.to(device)
+        if isinstance(pretain_model, str) and os.path.exists(pretain_model):
+            self.net.load_state_dict(torch.load(pretain_model, map_location = device))
         self.device = device
 
     def _init_model(self) -> WiderFaceBaseNet:

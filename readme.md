@@ -9,7 +9,7 @@
     - LM..
 
 ## 标签
-因为后续可能要给图片打标签，所以先列出来，看看有哪几个主观评价指标
+因为后续可能要给图片打标签，所以先列出来，看看有哪几个主观评价指标 - (开心等情绪词不属于主观评价)
 - CFD
     - Afraid
     - Angry
@@ -132,4 +132,4 @@
     - Atypical - 非典型的
     - Skeptical - 怀疑的
 - 社会词库 lilulu
-    - https://osf.io/preprints/psyarxiv/9cm7z
+    - https://osf.io/preprints/psyarxiv/9cm7z - 有五个维度，所以每个维度取高的，且既有积极也有消极的
