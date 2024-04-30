@@ -20,10 +20,10 @@ from model.loss.CombinedMarginLoss import CombinedMarginLoss
 from model.loss.PartialFC import PartialFC_V2
 from model.lr.PolynomialLRWarmup import PolynomialLRWarmup
 
-from configs import ModelConfig
+from configs.arcface import ArcFaceConfig
 from configs import getLogger
 
-def train(mc: ModelConfig):
+def train(mc: ArcFaceConfig):
     logger = getLogger("train")
     init_distributed(mc.rank, mc.world_size)
     setup_seed(mc.seed, cuda_deterministic=False)
@@ -130,7 +130,7 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--processes", default=1, type=int)
     parser.add_argument("-c", "--cuda", default=2, type=int)
     args = parser.parse_args()
-    mc = ModelConfig({
+    mc = ArcFaceConfig({
         "rank": args.rank,
         "world_size": args.processes, 
         "local_rank": args.cuda,

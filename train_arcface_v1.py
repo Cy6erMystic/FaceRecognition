@@ -8,7 +8,7 @@ from torch import distributed
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from configs import ModelConfig as mc
+from configs.arcface import ArcFaceConfig as mc
 from configs import getLogger
 from backbone import get_model
 
@@ -20,7 +20,7 @@ from datasets.dataset_mx import MXFaceDataset
 
 logger = getLogger("train")
 def main(args: dict):
-    mc.update(args)
+    mc = ArcFaceConfig(args)
     init_distributed(mc.rank, mc.world_size)
 
     train_set = MXFaceDataset(mc.rec)
