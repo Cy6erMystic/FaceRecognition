@@ -8,18 +8,20 @@ from sklearn.model_selection import train_test_split
 
 class CFDDataset(Dataset):
     def __init__(self, root_dir: str = "../../datasets/1",
-                 col = "R011", use_train: bool = True) -> None:
+                 col = "R011", use_train: bool = True, norm: bool = True) -> None:
         super(CFDDataset, self).__init__()
         self._root_dir = root_dir
+        self._norm = norm
         self._df = pd.read_csv(os.path.join(root_dir, "label_used.csv"))
+
         train, test = train_test_split(self._df.index, train_size = 512,
                                        random_state = 555, shuffle = True)
         self._idx = train if use_train else test
+        self._preload()
+
         self._col = col
         self._col_mean = self._df[col].mean()
         self._col_std = self._df[col].std()
-        
-        self._preload()
 
     def __getitem__(self, index):
         row = self._df.iloc[self._idx[index], :]
@@ -40,4 +42,7 @@ class CFDDataset(Dataset):
         self._imgs = imgs
 
     def _get_img(self, path: str):
-        return cv2.imread(path, cv2.IMREAD_COLOR)
+        if not self._norm:
+            return cv2.imread(path, cv2.IMREAD_COLOR)
+        im = cv2.imread(path, cv2.IMREAD_COLOR)
+        return ((im / 255) - 0.5) / 0.5

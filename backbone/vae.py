@@ -1,3 +1,4 @@
+# https://github.com/timbmg/VAE-CVAE-MNIST
 import torch
 import torch.nn as nn
 

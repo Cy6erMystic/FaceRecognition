@@ -8,6 +8,7 @@ import argparse
 import torch
 from tqdm import tqdm
 from torch.utils.data import DataLoader
+import torchvision.models as models
 from multiprocessing import Process
 
 from datasets.dataset_cfd import CFDDataset
@@ -25,7 +26,7 @@ from configs.arcface import ArcFaceConfig
 from configs import getLogger
 
 def load_test_datasets(rec: str):
-    test_set = CFDDataset(rec, use_train = False)
+    test_set = CFDDataset(rec, use_train = False, norm = False)
     test_loader = DataLoader(dataset = test_set, batch_size = 32)
 
     imgs = []
@@ -47,7 +48,7 @@ def load_test_datasets(rec: str):
             labels_.append(int(labels[i]) == int(labels[j]))
     imgs_ = torch.concat(imgs_, dim = 0)
     print(imgs_.shape)
-    return (imgs_, torch.flip(imgs_, [2])), labels_
+    return (imgs_, imgs_), labels_
 
 def train(mc: ArcFaceConfig):
     logger = getLogger("train")
@@ -113,7 +114,6 @@ def train(mc: ArcFaceConfig):
         loss_am.reset()
         for img, local_labels in tqdm(train_loader):
             global_step += 1
-            img = ((img / 255) - 0.5) / 0.5
             local_embeddings = backbone(img.cuda(mc.local_rank))
             loss: torch.Tensor = module_partial_fc(local_embeddings, local_labels.cuda(mc.local_rank))
 
@@ -157,10 +157,6 @@ def train(mc: ArcFaceConfig):
             }
             torch.save(checkpoint, os.path.join(mc.output, f"checkpoint_gpu_{mc.rank}.pt"))
 
-        if mc.rank == 0:
-            path_module = os.path.join(mc.output, "model.pt")
-            torch.save(backbone.module.state_dict(), path_module)
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="FaceRecognitionParser",
                                      description="人脸识别",
@@ -175,18 +171,19 @@ if __name__ == "__main__":
         "local_rank": args.cuda,
         "output": "work_dirs/cfd_train",
         "network": "r50",
+        "verbose": 200,
         "rec": "../../datasets/1",
         "num_classes": 2,
         "num_image": 831,
-        "num_epoch": 5000,
+        "num_epoch": 50000,
         "num_workers": 1,
         "margin_list": (1, 0.5, 0.0),
         "embedding_size": 512,
-        "batch_size": 256,
-        "lr": 1e-6,
+        "batch_size": 128,
+        "lr": 1e-5,
         "fp16": False,
         "sample_rate": 1.0,
-        "save_all_states": True,
+        "save_all_states": False,
         "resume": False
     })
     train(mc)
