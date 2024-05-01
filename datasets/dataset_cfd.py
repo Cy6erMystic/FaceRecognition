@@ -14,7 +14,7 @@ class CFDDataset(Dataset):
         self._norm = norm
         self._df = pd.read_csv(os.path.join(root_dir, "label_used.csv"))
 
-        train, test = train_test_split(self._df.index, train_size = 512,
+        train, test = train_test_split(self._df.index, train_size = 700,
                                        random_state = 555, shuffle = True)
         self._idx = train if use_train else test
         self._preload()

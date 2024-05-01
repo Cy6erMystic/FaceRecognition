@@ -26,7 +26,7 @@ from configs.arcface import ArcFaceConfig
 from configs import getLogger
 
 def load_test_datasets(rec: str):
-    test_set = CFDDataset(rec, use_train = False, norm = False)
+    test_set = CFDDataset(rec, col="R017", use_train = False, norm = False)
     test_loader = DataLoader(dataset = test_set, batch_size = 32)
 
     imgs = []
@@ -58,7 +58,7 @@ def train(mc: ArcFaceConfig):
     os.makedirs(mc.output, exist_ok=True)
 
     test_set = load_test_datasets(mc.rec)
-    train_set = CFDDataset(mc.rec)
+    train_set = CFDDataset(mc.rec, col="R017")
     train_sampler = DistributedSampler(dataset = train_set,
                                        num_replicas = mc.world_size,
                                        rank = mc.rank,
@@ -179,7 +179,7 @@ if __name__ == "__main__":
         "num_workers": 1,
         "margin_list": (1, 0.5, 0.0),
         "embedding_size": 512,
-        "batch_size": 128,
+        "batch_size": 350,
         "lr": 1e-5,
         "fp16": False,
         "sample_rate": 1.0,
