@@ -13,7 +13,6 @@ from multiprocessing import Process
 
 from datasets.dataset_cfd import CFDDataset
 from utils.distributed_sampler import DistributedSampler, setup_seed, worker_init_fn
-from utils.logging import AverageMeter
 
 from model import init_distributed
 from backbone import get_model
@@ -26,7 +25,7 @@ from configs.arcface import ArcFaceConfig
 from configs import getLogger
 
 def load_test_datasets(rec: str):
-    test_set = CFDDataset(rec, col="R011", use_train = False, norm = False)
+    test_set = CFDDataset(rec, col="R017", use_train = False, norm = False)
     test_loader = DataLoader(dataset = test_set, batch_size = 32)
 
     imgs = []
@@ -58,7 +57,7 @@ def train(mc: ArcFaceConfig):
     os.makedirs(mc.output, exist_ok=True)
 
     test_set = load_test_datasets(mc.rec)
-    train_set = CFDDataset(mc.rec, col="R011")
+    train_set = CFDDataset(mc.rec, col="R017")
     train_sampler = DistributedSampler(dataset = train_set,
                                        num_replicas = mc.world_size,
                                        rank = mc.rank,
@@ -105,13 +104,10 @@ def train(mc: ArcFaceConfig):
         lr_scheduler.load_state_dict(dict_checkpoint["state_lr_scheduler"])
         del dict_checkpoint
 
-    loss_am = AverageMeter()
     amp = torch.cuda.amp.grad_scaler.GradScaler(growth_interval=100)
 
     for epoch in range(start_epoch, mc.num_epoch):
         train_sampler.set_epoch(epoch)
-        logger.info("当前训练批次: {}, 上一轮损失: {}".format(epoch, loss_am.avg))
-        loss_am.reset()
         for img, local_labels in tqdm(train_loader):
             global_step += 1
             local_embeddings = backbone(img.cuda(mc.local_rank))
@@ -133,18 +129,15 @@ def train(mc: ArcFaceConfig):
                     opt.zero_grad()
             lr_scheduler.step()
 
-            with torch.no_grad():
-                loss_am.update(loss.item(), 1)
-
-        if global_step > 0 and global_step % mc.verbose == 0:
-            acc1, std1, acc2, std2, xnorm, embeddings_list = verification.test(test_set,
-                                                                               backbone = backbone,
-                                                                               batch_size = mc.batch_size,
-                                                                               nfolds = 10)
-            logger.info("Acc: %1.5f +- %1.5f" % (acc2, std2))
-            if acc2 > best_acc:
-                path_module = os.path.join(mc.output, "best_model.pt")
-                torch.save(backbone.module.state_dict(), path_module)
+            if global_step % mc.verbose == 0:
+                acc1, std1, acc2, std2, xnorm, embeddings_list = verification.test(test_set,
+                                                                                backbone = backbone,
+                                                                                batch_size = mc.batch_size,
+                                                                                nfolds = 10)
+                if acc2 > best_acc:
+                    path_module = os.path.join(mc.output, "best_model.pt")
+                    torch.save(backbone.module.state_dict(), path_module)
+                logger.info("Acc: %1.5f +- %1.5f, Best Acc: %1.5f" % (acc2, std2, best_acc))
 
         if mc.save_all_states:
             checkpoint = {
@@ -169,16 +162,16 @@ if __name__ == "__main__":
         "rank": args.rank,
         "world_size": args.processes, 
         "local_rank": args.cuda,
-        "output": "work_dirs/cfd_train/R011",
-        "network": "r50",
+        "output": "work_dirs/cfd_train/R017",
+        "network": "r100",
+        "embedding_size": 1000,
         "verbose": 200,
         "rec": "../../datasets/1",
         "num_classes": 2,
-        "num_image": 831,
+        "num_image": 700,
         "num_epoch": 50000,
         "num_workers": 1,
         "margin_list": (1, 0.5, 0.0),
-        "embedding_size": 512,
         "batch_size": 175,
         "lr": 1e-5,
         "fp16": False,

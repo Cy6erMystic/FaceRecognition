@@ -12,7 +12,6 @@ from multiprocessing import Process
 
 from datasets.dataset_mx import MXFaceDataset
 from utils.distributed_sampler import DistributedSampler, setup_seed, worker_init_fn
-from utils.logging import AverageMeter
 
 from model import init_distributed
 from backbone import get_model
@@ -77,7 +76,6 @@ def train(mc: ArcFaceConfig):
         lr_scheduler.load_state_dict(dict_checkpoint["state_lr_scheduler"])
         del dict_checkpoint
 
-    loss_am = AverageMeter()
     amp = torch.cuda.amp.grad_scaler.GradScaler(growth_interval=100)
     
     for epoch in range(start_epoch, mc.num_epoch):
@@ -103,9 +101,6 @@ def train(mc: ArcFaceConfig):
                     opt.step()
                     opt.zero_grad()
             lr_scheduler.step()
-
-            with torch.no_grad():
-                loss_am.update(loss.item(), 1)
 
         if mc.save_all_states:
             checkpoint = {

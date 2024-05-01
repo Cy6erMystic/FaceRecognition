@@ -16,6 +16,21 @@ handlers:
     formatter: train
     level: INFO
     filename: logs/training.log
+  train_cross:
+    class: logging.FileHandler
+    formatter: train
+    level: INFO
+    filename: logs/train_cross2.log
+  train_cosface:
+    class: logging.FileHandler
+    formatter: train
+    level: INFO
+    filename: logs/train_cosface.log
+  train_arcface:
+    class: logging.FileHandler
+    formatter: train
+    level: INFO
+    filename: logs/train_arcface.log
   error:
     class: logging.handlers.RotatingFileHandler
     level: ERROR
@@ -28,6 +43,15 @@ loggers:
   train:
     level: DEBUG
     handlers: [train, error]
+  train_cross:
+    level: DEBUG
+    handlers: [train_cross]
+  train_cosface:
+    level: DEBUG
+    handlers: [train_cosface]
+  train_arcface:
+    level: DEBUG
+    handlers: [train_arcface]
 root:
   level: INFO
   handlers: [console]

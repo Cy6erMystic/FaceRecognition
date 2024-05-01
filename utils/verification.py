@@ -224,7 +224,33 @@ def load_bin(path, image_size):
     return data_list, issame_list
 
 @torch.no_grad()
-def test(data_set, backbone, batch_size, nfolds=10):
+def test2(data_set, backbone: torch.nn.Module, batch_size, nfolds = 10):
+    data: torch.Tensor = data_set[0][0]
+    issame_list = data_set[1]
+
+    embeddings = None
+    ba = 0
+    while ba < data.shape[0]:
+        bb = min(ba + batch_size, data.shape[0])
+        count = bb - ba
+        _data = data[bb - batch_size: bb]
+        backbone.eval()
+        net_out: torch.Tensor = backbone(_data.cuda())
+        _embeddings = net_out.detach().cpu().numpy()
+        if embeddings is None:
+            embeddings = np.zeros((data.shape[0], _embeddings.shape[1]))
+        embeddings[ba:bb, :] = _embeddings[(batch_size - count):, :]
+        ba = bb
+    
+    embeddings = sklearn.preprocessing.normalize(embeddings)
+    
+    tpr, fpr, accuracy, val, val_std, far = evaluate(embeddings, issame_list, nrof_folds=nfolds)
+    acc2, std2 = np.mean(accuracy), np.std(accuracy)
+    return 0, 0, acc2, std2, 0, embeddings
+
+@torch.no_grad()
+def test(data_set, backbone: torch.nn.Module, batch_size, nfolds=10):
+    backbone.eval()
     print('testing verification..')
     data_list = data_set[0]
     issame_list = data_set[1]
@@ -240,7 +266,7 @@ def test(data_set, backbone, batch_size, nfolds=10):
             _data = data[bb - batch_size: bb]
             time0 = datetime.datetime.now()
             img = ((_data / 255) - 0.5) / 0.5
-            net_out: torch.Tensor = backbone(img)
+            net_out: torch.Tensor = backbone(img.cuda())
             _embeddings = net_out.detach().cpu().numpy()
             time_now = datetime.datetime.now()
             diff = time_now - time0

@@ -8,14 +8,15 @@ from sklearn.model_selection import train_test_split
 
 class CFDDataset(Dataset):
     def __init__(self, root_dir: str = "../../datasets/1",
-                 col = "R011", use_train: bool = True, norm: bool = True) -> None:
+                 col = "R011", use_train: bool = True, norm: bool = True,
+                 random_seed: int = 555) -> None:
         super(CFDDataset, self).__init__()
         self._root_dir = root_dir
         self._norm = norm
         self._df = pd.read_csv(os.path.join(root_dir, "label_used.csv"))
 
         train, test = train_test_split(self._df.index, train_size = 700,
-                                       random_state = 555, shuffle = True)
+                                       random_state = random_seed, shuffle = True)
         self._idx = train if use_train else test
         self._preload()
 
