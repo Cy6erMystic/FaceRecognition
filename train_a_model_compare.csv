@@ -1,0 +1,4 @@
+name,param1,param2,param3
+softmax,0,0,0
+arcface,1,0.5,0
+cosface,4,0,0

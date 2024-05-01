@@ -13,10 +13,11 @@ class BaseModelConfig(BaseConfig):
     def __init__(self, args: dict = {}) -> None:
         # 初始化参数
         self.seed = 2048 # 随机数种子
+        self.eary_stop = 2000 # 早停
         self.local_rank = 0 # 在哪个GPU训练
         # 训练参数
-        self.num_epoch = 30 # epoch
-        self.batch_size = 128
+        self.num_epoch = 50000 # epoch
+        self.batch_size = 175
         self.lr = 0.1 # 学习率
         # 优化器参数
         self.optimizer = "sgd"
