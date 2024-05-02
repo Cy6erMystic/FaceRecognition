@@ -140,7 +140,7 @@ def run(cuda: int, mmc: ModelChoose):
         "local_rank": cuda,
         "col": mmc.col_name,
         "early_stop": 2000,
-        "verbose": 100,
+        "verbose": 40,
         "output": "work_dirs/test/{}/{}/{}/{}/{}".format(mmc.col_name,
                                                          mmc.model_name,
                                                          mmc.param1,
