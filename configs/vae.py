@@ -1,7 +1,7 @@
-from .base import BaseConfig
+from .base import BaseModelConfig
 
 __all__=['VAEConfig']
-class VAEConfig(BaseConfig):
+class VAEConfig(BaseModelConfig):
     def __init__(self, args: dict = {}) -> None:
         self._init()
         super(VAEConfig, self).__init__(args)

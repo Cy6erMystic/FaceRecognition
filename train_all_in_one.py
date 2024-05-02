@@ -44,8 +44,8 @@ def getLogger_custom(mmc: ModelChoose):
     
     return logger
 
-def load_test_datasets(rec: str, col: str):
-    test_set = CFDDataset(rec, col=col, use_train = False)
+def load_test_datasets(rec: str, col: str, random_seed: int):
+    test_set = CFDDataset(rec, col=col, random_seed=random_seed, use_train = False)
     test_loader = DataLoader(dataset = test_set, batch_size = 32)
 
     imgs = []
@@ -76,7 +76,7 @@ def train(mc: ArcFaceConfig, mmc: ModelChoose):
     os.makedirs(mc.output, exist_ok=True)
 
     train_set = CFDDataset(mc.rec, col=mc.col, random_seed = mc.seed)
-    test_set = load_test_datasets(mc.rec, mc.col)
+    test_set = load_test_datasets(mc.rec, mc.col, mc.seed)
     train_loader = DataLoader(dataset=train_set, batch_size=mc.batch_size, shuffle=True)
 
     backbone = models.resnet101(weights = models.ResNet101_Weights.DEFAULT).cuda()
@@ -133,11 +133,14 @@ def train(mc: ArcFaceConfig, mmc: ModelChoose):
         if mc.early_stop < duration_best:
             logger.info("BREAK, the model is under the best.")
             break
+    return 0
 
 def run(cuda: int, mmc: ModelChoose):
     mc = ArcFaceConfig({
         "local_rank": cuda,
         "col": mmc.col_name,
+        "early_stop": 2000,
+        "verbose": 100,
         "output": "work_dirs/test/{}/{}/{}/{}/{}".format(mmc.col_name,
                                                          mmc.model_name,
                                                          mmc.param1,
@@ -156,9 +159,15 @@ def run(cuda: int, mmc: ModelChoose):
 if __name__ == "__main__":
     df_v = pd.read_csv("train_a_predict_val.csv")
     df = pd.read_csv("train_a_model_compare.csv")
+    parser = argparse.ArgumentParser(prog="FaceRecognitionParser",
+                                     description="人脸识别",
+                                     epilog="Mupsy@2024")
+    parser.add_argument("-c", "--cuda", default=0, type=int)
+    args = parser.parse_args()
+    cuda: int = args.cuda % torch.cuda.device_count()
 
-    for i, row1 in df_v.iloc[0:5].iterrows():
+    for i, row1 in df_v.iloc[cuda * 5:(cuda + 1) * 5].iterrows():
         for j, row2 in df.iterrows():
             mmc = ModelChoose(row2["name"], int(row2["param1"]), float(row2["param2"]), 
-                                float(row2["param3"]), row1["name"])
-            run(0, mmc)
+                              float(row2["param3"]), row1["name"])
+            run(cuda, mmc)

@@ -8,7 +8,6 @@ class ArcFaceConfig(BaseModelConfig):
         self.world_size = 1
 
         self.gradient_acc = 1
-        self.verbose = 2000
         self.frequent = 10
 
         # 模型
