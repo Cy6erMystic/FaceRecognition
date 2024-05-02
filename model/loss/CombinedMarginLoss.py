@@ -1,5 +1,8 @@
 import torch
 import math
+from typing import Callable
+from torch.nn.functional import linear, normalize
+from .PartialFC import DistCrossEntropy
 
 class CombinedMarginLoss(torch.nn.Module):
     """
@@ -76,6 +79,27 @@ class CombinedMarginLoss(torch.nn.Module):
         logits = logits * self.s
 
         return logits
+
+class CalcLoss(torch.nn.Module):
+    def __init__(self, margin_loss: Callable,
+                 embedding_size: int,
+                 num_classes: int) -> None:
+        super(CalcLoss, self).__init__()
+        self.margin_softmax = margin_loss
+        self.dist_cross_entropy = DistCrossEntropy()
+        self.weight = torch.nn.Parameter(torch.normal(0, 0.01, (num_classes, embedding_size)))
+        
+    def forward(self, local_embeddings: torch.Tensor, local_labels: torch.Tensor):
+        norm_embeddings = normalize(local_embeddings)
+        norm_weight_activated = normalize(self.weight)
+        logits = linear(norm_embeddings, norm_weight_activated)
+
+        logits = logits.clamp(-1, 1)
+        labels = local_labels.view(-1, 1)
+        
+        logits = self.margin_softmax(logits, labels)
+        loss = self.dist_cross_entropy(logits, labels)
+        return loss
 
 if __name__ == "__main__":
     num_samples = 10 # 10个特征

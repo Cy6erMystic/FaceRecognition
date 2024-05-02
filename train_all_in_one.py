@@ -9,7 +9,7 @@ import torchvision.models as models
 from multiprocessing import Manager, Queue, Pool
 
 from model import init_distributed
-from model.loss.CombinedMarginLoss import CombinedMarginLoss
+from model.loss.CombinedMarginLoss import CombinedMarginLoss, CalcLoss
 from model.loss.PartialFC import PartialFC_V2
 from utils import verification
 from utils.manager import ModelManager
@@ -71,8 +71,7 @@ def load_test_datasets(rec: str, col: str):
 def train(mc: ArcFaceConfig, mmc: ModelChoose):
     mm = ModelManager()
     logger = getLogger_custom(mmc)
-    init_distributed(mc.rank, mc.world_size,
-                     "tcp://127.0.0.1:1258{}".format(mc.local_rank))
+    # init_distributed(mc.rank, mc.world_size, "tcp://127.0.0.1:1258{}".format(mc.local_rank))
     torch.cuda.set_device(mc.local_rank)
     os.makedirs(mc.output, exist_ok=True)
 
@@ -87,8 +86,9 @@ def train(mc: ArcFaceConfig, mmc: ModelChoose):
         criterion = torch.nn.CrossEntropyLoss()
     else:
         margin_loss = CombinedMarginLoss(64, mmc.param1, mmc.param2, mmc.param3)
-        module_partial_fc = PartialFC_V2(margin_loss=margin_loss, embedding_size=mc.embedding_size,
-                                        num_classes=mc.num_classes, sample_rate=mc.sample_rate, fp16=mc.fp16)
+        # module_partial_fc = PartialFC_V2(margin_loss=margin_loss, embedding_size=mc.embedding_size,
+        #                                 num_classes=mc.num_classes, sample_rate=mc.sample_rate, fp16=mc.fp16)
+        module_partial_fc = CalcLoss(margin_loss=margin_loss, num_classes=mc.num_classes, embedding_size=mc.embedding_size)
         module_partial_fc.train().cuda()
 
     optimizer = torch.optim.AdamW(params = [{"params": backbone.parameters()}],
@@ -138,15 +138,17 @@ def run(cuda: int, mmc: ModelChoose):
         "local_rank": cuda,
         "col": mmc.col_name,
         "output": "work_dirs/test/{}/{}/{}/{}/{}".format(mmc.col_name,
-                                                      mmc.model_name,
-                                                      mmc.param1,
-                                                      mmc.param2,
-                                                      mmc.param3),
+                                                         mmc.model_name,
+                                                         mmc.param1,
+                                                         mmc.param2,
+                                                         mmc.param3),
         "rec": "../../datasets/1",
         "num_epoch": 50000,
         "batch_size": 175,
         "lr": 1e-5,
-        "weight_decay": 5e-4
+        "weight_decay": 5e-4,
+        "num_classes": 2,
+        "embedding_size": 1000
     })
     train(mc, mmc)
 
@@ -158,4 +160,4 @@ if __name__ == "__main__":
         for j, row2 in df.iterrows():
             mmc = ModelChoose(row2["name"], int(row2["param1"]), float(row2["param2"]), 
                                 float(row2["param3"]), row1["name"])
-            run(1, mmc)
+            run(0, mmc)
