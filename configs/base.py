@@ -13,7 +13,7 @@ class BaseModelConfig(BaseConfig):
     def __init__(self, args: dict = {}) -> None:
         # 初始化参数
         self.seed = 2048 # 随机数种子
-        self.eary_stop = 2000 # 早停
+        self.early_stop = 2000 # 早停
         self.local_rank = 0 # 在哪个GPU训练
         # 训练参数
         self.num_epoch = 50000 # epoch

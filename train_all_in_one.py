@@ -28,7 +28,7 @@ class ModelChoose():
 
 def getLogger_custom(mmc: ModelChoose):
     logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger("train")
+    logger = logging.getLogger("train_{}".format(mmc.model_name))
     
     file_handler = logging.FileHandler("logs/{}_train_{}_{}_{}_{}.logs".format(
         mmc.col_name,
@@ -120,7 +120,6 @@ def train(mc: ArcFaceConfig, mmc: ModelChoose):
                                                                                 nfolds=10)
             mm.update_acc(acc2, std2)
             logger.info(mm)
-            duration_best += 1
             if mm.is_best_acc:
                 duration_best = 0
                 logger.info("SAVING BEST MODEL")
@@ -129,9 +128,11 @@ def train(mc: ArcFaceConfig, mmc: ModelChoose):
                 if mmc.model_name == "softmax":
                     m2_p = os.path.join(mc.output, "bestAcc_model_predict.pt")
                     torch.save(predict_model, m2_p)
-            if mc.eary_stop < duration_best:
-                logger.info("BREAK, the model is under the best.")
-                break
+
+        duration_best += 1
+        if mc.early_stop < duration_best:
+            logger.info("BREAK, the model is under the best.")
+            break
 
 def run(cuda: int, mmc: ModelChoose):
     mc = ArcFaceConfig({
@@ -156,7 +157,7 @@ if __name__ == "__main__":
     df_v = pd.read_csv("train_a_predict_val.csv")
     df = pd.read_csv("train_a_model_compare.csv")
 
-    for i, row1 in df_v.iterrows():
+    for i, row1 in df_v.iloc[0:5].iterrows():
         for j, row2 in df.iterrows():
             mmc = ModelChoose(row2["name"], int(row2["param1"]), float(row2["param2"]), 
                                 float(row2["param3"]), row1["name"])
