@@ -1,4 +1,12 @@
-__all__=['BaseConfig']
+__all__=['BaseConfig', 'BaseModelConfig', 'ModelChoose']
+
+class ModelChoose():
+    def __init__(self, model_name, param1, param2, param3, col_name) -> None:
+        self.model_name: str = model_name
+        self.param1: int = param1
+        self.param2: float = param2
+        self.param3: float = param3
+        self.col_name: str = col_name
 
 class BaseConfig():
     def __init__(self, args: dict = {}) -> None:

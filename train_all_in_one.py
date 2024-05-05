@@ -9,40 +9,16 @@ import torchvision.models as models
 from multiprocessing import Manager, Queue, Pool
 
 from model import init_distributed
-from model.loss.CombinedMarginLoss import CombinedMarginLoss, CalcLoss
 from model.loss.PartialFC import PartialFC_V2
+from model.loss.CombinedMarginLoss import CombinedMarginLoss, CalcLoss
 from utils import verification
 from utils.manager import ModelManager
+from utils.logger import Logger
 from backbone.baseline import FaceRecognitionBase
 from datasets.dataset_cfd import CFDDataset
 
 from configs.arcface import ArcFaceConfig
-
-class ModelChoose():
-    def __init__(self, model_name, param1, param2, param3, col_name) -> None:
-        self.model_name: str = model_name
-        self.param1: int = param1
-        self.param2: float = param2
-        self.param3: float = param3
-        self.col_name: str = col_name
-
-def getLogger_custom(mmc: ModelChoose):
-    logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger("train_{}".format(mmc.model_name))
-    
-    file_handler = logging.FileHandler("logs/{}_train_{}_{}_{}_{}.logs".format(
-        mmc.col_name,
-        mmc.model_name,
-        mmc.param1,
-        mmc.param2,
-        mmc.param3
-    ), mode="w")
-    file_handler.setLevel(logging.INFO)
-    file_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
-    
-    logger.addHandler(file_handler)
-    
-    return logger
+from configs.base import ModelChoose
 
 def load_test_datasets(rec: str, col: str, random_seed: int):
     test_set = CFDDataset(rec, col=col, random_seed=random_seed, use_train = False)
@@ -70,7 +46,7 @@ def load_test_datasets(rec: str, col: str, random_seed: int):
 
 def train(mc: ArcFaceConfig, mmc: ModelChoose):
     mm = ModelManager()
-    logger = getLogger_custom(mmc)
+    logger = Logger(name = "train", mmc = mmc)
     # init_distributed(mc.rank, mc.world_size, "tcp://127.0.0.1:1258{}".format(mc.local_rank))
     torch.cuda.set_device(mc.local_rank)
     os.makedirs(mc.output, exist_ok=True)

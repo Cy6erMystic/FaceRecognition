@@ -43,5 +43,5 @@ class ModelManager():
         msgs = ["EPOCH: %s" % (self._curr_epoch),
                 "LOSS: %.4f" % (np.mean(r1)),
                 "ACC: %1.5f" % (np.mean(r2)),
-                "BSET_ACC: %1.5f" % (np.max([a[1] for a in self.acc_list]))]
+                "BEST_ACC: %1.5f" % (np.max([a[1] for a in self.acc_list]))]
         return " ".join(msgs)

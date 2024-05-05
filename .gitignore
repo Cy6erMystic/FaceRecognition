@@ -1,5 +1,6 @@
 __pycache__
 logs
+logs_*
 work_dirs
 a.ipynb
 a.py
