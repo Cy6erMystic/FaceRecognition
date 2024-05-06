@@ -5,9 +5,9 @@ numpy==1.24.4
 nvidia-dali-cuda120==1.36.0
 scipy==1.8.1
 
-torch==2.2.2
-torchvision==0.17.2
-torchaudio==2.2.2
+torch==2.2.2 --index-url https://download.pytorch.org/whl/cu121
+torchvision==0.17.2 --index-url https://download.pytorch.org/whl/cu121
+torchaudio==2.2.2 --index-url https://download.pytorch.org/whl/cu121
 
 matplotlib==3.7.5
 opencv-python==4.9.0.80
