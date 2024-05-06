@@ -60,6 +60,9 @@ def train(mc: ArcFaceConfig, mmc: ModelChoose):
     if mmc.model_name == "softmax":
         predict_model = FaceRecognitionBase(1000, 2).cuda()
         criterion = torch.nn.CrossEntropyLoss()
+        optimizer = torch.optim.AdamW(params = [{"params": backbone.parameters()},
+                                                {"params": predict_model.parameters()}],
+                                      lr = mc.lr, weight_decay = mc.weight_decay)
     else:
         margin_loss = CombinedMarginLoss(64, mmc.param1, mmc.param2, mmc.param3)
         # module_partial_fc = PartialFC_V2(margin_loss=margin_loss, embedding_size=mc.embedding_size,
@@ -67,8 +70,9 @@ def train(mc: ArcFaceConfig, mmc: ModelChoose):
         module_partial_fc = CalcLoss(margin_loss=margin_loss, num_classes=mc.num_classes, embedding_size=mc.embedding_size)
         module_partial_fc.train().cuda()
 
-    optimizer = torch.optim.AdamW(params = [{"params": backbone.parameters()}],
-                                  lr = mc.lr, weight_decay = mc.weight_decay)
+        optimizer = torch.optim.AdamW(params = [{"params": backbone.parameters()},
+                                                {"params": module_partial_fc.parameters()}],
+                                      lr = mc.lr, weight_decay = mc.weight_decay)
 
     duration_best = 0
     for epoch in range(mc.num_epoch):
@@ -104,6 +108,9 @@ def train(mc: ArcFaceConfig, mmc: ModelChoose):
                 if mmc.model_name == "softmax":
                     m2_p = os.path.join(mc.output, "bestAcc_model_predict.pt")
                     torch.save(predict_model, m2_p)
+                else:
+                    m2_p = os.path.join(mc.output, "bestAcc_model_partial_fc.pt")
+                    torch.save(module_partial_fc, m2_p)
 
         duration_best += 1
         if mc.early_stop < duration_best:
@@ -116,14 +123,14 @@ def run(cuda: int, mmc: ModelChoose):
         "local_rank": cuda,
         "col": mmc.col_name,
         "early_stop": 2000,
-        "verbose": 40,
+        "verbose": 50,
         "output": "work_dirs/test/{}/{}/{}/{}/{}".format(mmc.col_name,
                                                          mmc.model_name,
                                                          mmc.param1,
                                                          mmc.param2,
                                                          mmc.param3),
         "rec": "../../datasets/1",
-        "num_epoch": 50000,
+        "num_epoch": 100000,
         "batch_size": 175,
         "lr": 1e-5,
         "weight_decay": 5e-4,

@@ -1,11 +1,11 @@
 name,param1,param2,param3
 softmax,0,0,0
-arcface,1,0.1,0
-arcface,1,0.5,0
-arcface,1,0.8,0
 cosface,1,0,0
 cosface,2,0,0
 cosface,4,0,0
 lmcl,1,0,0.1
 lmcl,1,0,0.5
 lmcl,1,0,0.8
+arcface,1,0.1,0
+arcface,1,0.5,0
+arcface,1,0.8,0
