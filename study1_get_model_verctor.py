@@ -3,6 +3,11 @@ import torchvision
 import numpy as np
 from tqdm import tqdm
 from torch.utils.data import DataLoader
+import pandas as pd
+import seaborn as sns
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
 
 from datasets.dataset_cfd import CFDDataset
 
@@ -61,11 +66,12 @@ def calc():
     data34 = np.load("work_dirs/study1/resnet34.npy")
     data101 = np.load("work_dirs/study1/resnet101.npy")
     data152 = np.load("work_dirs/study1/resnet152.npy")
-    np.corrcoef(np.concatenate([np.corrcoef(data18)[index_x,index_y].reshape(1,-1),
-                                np.corrcoef(data34)[index_x,index_y].reshape(1,-1),
-                                np.corrcoef(data50)[index_x,index_y].reshape(1,-1),
-                                np.corrcoef(data101)[index_x,index_y].reshape(1,-1),
-                                np.corrcoef(data152)[index_x,index_y].reshape(1,-1)], axis = 0))
+    d =  np.corrcoef(np.concatenate([np.corrcoef(data18)[index_x,index_y].reshape(1,-1),
+                                     np.corrcoef(data34)[index_x,index_y].reshape(1,-1),
+                                     np.corrcoef(data50)[index_x,index_y].reshape(1,-1),
+                                     np.corrcoef(data101)[index_x,index_y].reshape(1,-1),
+                                     np.corrcoef(data152)[index_x,index_y].reshape(1,-1)], axis = 0))
+    return pd.DataFrame(d, columns=["ResNet18", "ResNet34", "ResNet50", "ResNet101", "ResNet152"], index=["ResNet18", "ResNet34", "ResNet50", "ResNet101", "ResNet152"])
 
 def stim_calc():
     index_x = []
@@ -79,8 +85,45 @@ def stim_calc():
     def get_r(*shape: tuple):
         return np.corrcoef(np.random.rand(*shape))
 
-    np.corrcoef(np.concatenate([get_r(831, 100)[index_x,index_y].reshape(1, -1),
-                                get_r(831, 100)[index_x,index_y].reshape(1, -1)], axis=0))
+    return np.corrcoef(np.concatenate([get_r(831, 100)[index_x,index_y].reshape(1, -1),
+                                       get_r(831, 100)[index_x,index_y].reshape(1, -1)], axis=0))
+
+def render_img_res():
+    N = 128
+    vals = np.zeros((N * 2, 4))
+    vals[:, 0] = np.concatenate([np.linspace(21/255, 255/255, N), np.linspace(255/255, 168/255, N)])
+    vals[:, 1] = np.concatenate([np.linspace(43/255, 255/255, N), np.linspace(255/255, 21/255, N)])
+    vals[:, 2] = np.concatenate([np.linspace(168/255, 255/255, N), np.linspace(255/255, 43/255, N)])
+    vals[:, 3] = 1
+    cmap = mpl.colors.ListedColormap(vals)
+
+    fig, axes = plt.subplots(2, 3)
+    cbar_ax = fig.add_axes([0.91, 0.3, 0.03, 0.4])
+    for i, mi in enumerate([18, 34, 50, 101, 152]):
+        ax: Axes = axes[i//3][i%3]
+        d = np.load("work_dirs/study1/resnet{}.npy".format(mi))
+        g = sns.clustermap(np.corrcoef(d))
+        sns.heatmap(g.data.iloc[g.dendrogram_row.reordered_ind, g.dendrogram_col.reordered_ind],
+                    ax = ax, cmap=cmap, cbar = False, vmin=-1, vmax=1)
+        ax.set_title("ResNet{}".format(mi), loc="center")
+        ax.axis("off")
+    ax: Axes = axes[1][2]
+    g = sns.clustermap(calc())
+    sns.heatmap(g.data.iloc[g.dendrogram_row.reordered_ind, g.dendrogram_col.reordered_ind],
+                ax = axes[1][2], cmap=cmap, cbar = True, cbar_ax=cbar_ax, vmin=-1, vmax=1)
+    ax.set_yticks([])
+    # for mi in [18, 34, 50, 101, 152]:
+    #     d = np.load("work_dirs/study1/resnet{}.npy".format(mi))
+    #     g = sns.clustermap(np.corrcoef(d), cmap=cmap,
+    #                     cbar_pos=(0.9, 0.08, 0.05, 0.71), figsize=(5, 5))
+    #     g.ax_heatmap.axes.set_xticks([])
+    #     g.ax_heatmap.axes.set_yticks([])
+    #     g.ax_col_dendrogram.remove()
+    #     g.ax_row_dendrogram.remove()
+    #     g.ax_heatmap.set_title("ResNet101", loc = "center")
+    #     g.savefig("work_dirs/study1/resnet{}.jpg".format(mi))
+
+    fig.savefig("work_dirs/study1/resnet_compare.jpg", bbox_inches = "tight")
 
 if __name__ == "__main__":
-    main()
+    print(render_img_res())
