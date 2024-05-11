@@ -97,8 +97,8 @@ def render_img_res():
     vals[:, 3] = 1
     cmap = mpl.colors.ListedColormap(vals)
 
-    fig, axes = plt.subplots(2, 3)
-    cbar_ax = fig.add_axes([0.91, 0.3, 0.03, 0.4])
+    fig, axes = plt.subplots(2, 3, figsize = (18, 10))
+    fig.subplots_adjust(right=0.85)
     for i, mi in enumerate([18, 34, 50, 101, 152]):
         ax: Axes = axes[i//3][i%3]
         d = np.load("work_dirs/study1/resnet{}.npy".format(mi))
@@ -110,8 +110,16 @@ def render_img_res():
     ax: Axes = axes[1][2]
     g = sns.clustermap(calc())
     sns.heatmap(g.data.iloc[g.dendrogram_row.reordered_ind, g.dendrogram_col.reordered_ind],
-                ax = axes[1][2], cmap=cmap, cbar = True, cbar_ax=cbar_ax, vmin=-1, vmax=1)
+                ax = axes[1][2], cmap=cmap, cbar = False, vmin=-1, vmax=1)
     ax.set_yticks([])
+    ax.set_xticklabels(ax.get_xticklabels(), rotation = -30, ha = 'right')
+    ax.xaxis.tick_top()
+    ax.xaxis.set_label_position('top')
+
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=-1, vmax=1))
+    sm.set_array([])
+    cbar = plt.colorbar(sm, ax=axes.ravel().tolist(), pad=0.01, aspect=30)
+    cbar.set_label('Correlation')
     # for mi in [18, 34, 50, 101, 152]:
     #     d = np.load("work_dirs/study1/resnet{}.npy".format(mi))
     #     g = sns.clustermap(np.corrcoef(d), cmap=cmap,
