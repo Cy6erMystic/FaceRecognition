@@ -105,6 +105,7 @@ def render_img_res():
         sns.heatmap(g.data.iloc[g.dendrogram_row.reordered_ind, g.dendrogram_col.reordered_ind],
                     ax = ax, cmap=cmap, cbar = False, vmin=-1, vmax=1)
         ax.set_title("ResNet{}".format(mi), loc="center")
+        ax.text(0, 0, "abcde"[i]).set_fontsize('large')
         ax.axis("off")
     ax: Axes = axes[1][2]
     g = sns.clustermap(calc())
@@ -112,6 +113,7 @@ def render_img_res():
                 ax = axes[1][2], cmap=cmap, cbar = False, vmin=-1, vmax=1)
     ax.set_yticks([])
     ax.set_xticklabels(ax.get_xticklabels(), rotation = -30, ha = 'right')
+    ax.text(0, 0, "f").set_fontsize('large')
     ax.xaxis.tick_top()
     ax.xaxis.set_label_position('top')
 
