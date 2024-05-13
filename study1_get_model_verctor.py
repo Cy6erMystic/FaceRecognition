@@ -25,6 +25,26 @@ class ArchiveModelLayer():
     def reset(self):
         self._result = []
 
+def _calc_r(arr: list):
+    index_x = []
+    index_y = []
+    for i in range(831):
+        for j in range(i + 1):
+            if i > j:
+                index_x.append(i)
+                index_y.append(j)
+    r = np.corrcoef(np.concatenate([np.corrcoef(a)[index_x, index_y].reshape(1, -1) for a in arr], axis=0))
+    return r
+
+def _random(ndarr: np.ndarray):
+    t = np.copy(ndarr)
+    for i in range(t.shape[1]):
+        np.random.shuffle(t[:, i])
+    return t
+    # t = np.copy(ndarr).reshape(-1)
+    # np.random.shuffle(t)
+    # return t.reshape(*ndarr.shape)
+
 @torch.no_grad()
 def main():
     torch.cuda.set_device(2)
@@ -53,40 +73,19 @@ def main():
         am.reset()
 
 def calc():
-    index_x = []
-    index_y = []
-    for i in range(831):
-        for j in range(i + 1):
-            if i > j:
-                index_x.append(i)
-                index_y.append(j)
-
-    data18 = np.load("work_dirs/study1/resnet18.npy")
-    data50 = np.load("work_dirs/study1/resnet50.npy")
-    data34 = np.load("work_dirs/study1/resnet34.npy")
-    data101 = np.load("work_dirs/study1/resnet101.npy")
-    data152 = np.load("work_dirs/study1/resnet152.npy")
-    d =  np.corrcoef(np.concatenate([np.corrcoef(data18)[index_x,index_y].reshape(1,-1),
-                                     np.corrcoef(data34)[index_x,index_y].reshape(1,-1),
-                                     np.corrcoef(data50)[index_x,index_y].reshape(1,-1),
-                                     np.corrcoef(data101)[index_x,index_y].reshape(1,-1),
-                                     np.corrcoef(data152)[index_x,index_y].reshape(1,-1)], axis = 0))
-    return pd.DataFrame(d, columns=["ResNet18", "ResNet34", "ResNet50", "ResNet101", "ResNet152"], index=["ResNet18", "ResNet34", "ResNet50", "ResNet101", "ResNet152"])
+    resnet_arr = [np.load("work_dirs/study1/resnet18.npy"),
+                  np.load("work_dirs/study1/resnet34.npy"),
+                  np.load("work_dirs/study1/resnet50.npy"),
+                  np.load("work_dirs/study1/resnet101.npy"),
+                  np.load("work_dirs/study1/resnet152.npy")]
+    return pd.DataFrame(_calc_r(resnet_arr), columns=["ResNet18", "ResNet34", "ResNet50", "ResNet101", "ResNet152"], index=["ResNet18", "ResNet34", "ResNet50", "ResNet101", "ResNet152"])
 
 def stim_calc():
-    index_x = []
-    index_y = []
-    for i in range(831):
-        for j in range(i + 1):
-            if i > j:
-                index_x.append(i)
-                index_y.append(j)
-
     def get_r(*shape: tuple):
         return np.corrcoef(np.random.rand(*shape))
-
-    return np.corrcoef(np.concatenate([get_r(831, 100)[index_x,index_y].reshape(1, -1),
-                                       get_r(831, 100)[index_x,index_y].reshape(1, -1)], axis=0))
+    return _calc_r([get_r(831, 100), 
+                    get_r(831, 100), 
+                    get_r(831, 100)])
 
 def render_img_res():
     N = 128
@@ -120,18 +119,21 @@ def render_img_res():
     sm.set_array([])
     cbar = plt.colorbar(sm, ax=axes.ravel().tolist(), pad=0.01, aspect=30)
     cbar.set_label('Correlation')
-    # for mi in [18, 34, 50, 101, 152]:
-    #     d = np.load("work_dirs/study1/resnet{}.npy".format(mi))
-    #     g = sns.clustermap(np.corrcoef(d), cmap=cmap,
-    #                     cbar_pos=(0.9, 0.08, 0.05, 0.71), figsize=(5, 5))
-    #     g.ax_heatmap.axes.set_xticks([])
-    #     g.ax_heatmap.axes.set_yticks([])
-    #     g.ax_col_dendrogram.remove()
-    #     g.ax_row_dendrogram.remove()
-    #     g.ax_heatmap.set_title("ResNet101", loc = "center")
-    #     g.savefig("work_dirs/study1/resnet{}.jpg".format(mi))
-
     fig.savefig("work_dirs/study1/resnet_compare.jpg", bbox_inches = "tight")
 
+def permutation_test():
+    resnet_arr = [np.load("work_dirs/study1/resnet18.npy"),
+                  np.load("work_dirs/study1/resnet34.npy"),
+                  np.load("work_dirs/study1/resnet50.npy"),
+                  np.load("work_dirs/study1/resnet101.npy"),
+                  np.load("work_dirs/study1/resnet152.npy")]
+
+    r = []
+    for _ in tqdm(range(10000)):
+        r.append(_calc_r([_random(ra) for ra in resnet_arr]))
+    r = np.array(r)
+    p = np.sum(_calc_r(resnet_arr) < r, axis = 0) / r.shape[0]
+    return p
+
 if __name__ == "__main__":
-    print(render_img_res())
+    render_img_res()
