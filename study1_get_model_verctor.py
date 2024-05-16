@@ -47,7 +47,7 @@ def _random(ndarr: np.ndarray):
 
 @torch.no_grad()
 def main():
-    torch.cuda.set_device(2)
+    torch.cuda.set_device(1)
     l = (("resnet18", torchvision.models.resnet18, torchvision.models.ResNet18_Weights.DEFAULT),
          ("resnet34", torchvision.models.resnet34, torchvision.models.ResNet34_Weights.DEFAULT),
          ("resnet50", torchvision.models.resnet50, torchvision.models.ResNet50_Weights.DEFAULT),
@@ -63,6 +63,8 @@ def main():
 
     for m_name, m_func, m_param in l:
         model = m_func(weights = m_param).cuda()
+        # model = torch.load("./work_dirs/test/R017/lmcl/1/0.0/0.5/bestAcc_model_backbone.pt").cuda()
+        model.eval()
         model.layer4.register_forward_hook(am.get_layer4)
         for img, label in tqdm(test_loader):
             model(img.cuda())
@@ -138,4 +140,5 @@ def permutation_test():
     return p
 
 if __name__ == "__main__":
+    main()
     render_img_res()

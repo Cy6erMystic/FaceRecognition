@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 class CFDDataset(Dataset):
     def __init__(self, root_dir: str = "../../datasets/1",
                  col = "R011", use_train: bool = True, norm: bool = True,
-                 random_seed: int = 555) -> None:
+                 random_seed: int = 555, split = True) -> None:
         super(CFDDataset, self).__init__()
         self._root_dir = root_dir
         self._norm = norm
@@ -18,6 +18,8 @@ class CFDDataset(Dataset):
         train, test = train_test_split(self._df.index, train_size = 700,
                                        random_state = random_seed, shuffle = True)
         self._idx = train if use_train else test
+        if not split:
+            self._idx = self._df.index
         self._preload()
 
         self._col = col
