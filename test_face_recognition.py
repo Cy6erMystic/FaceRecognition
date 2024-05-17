@@ -47,4 +47,4 @@ def eval_img(img: str):
 
 if __name__ == "__main__":
     # save_embed(ArcFaceConfig({"rec": "../../datasets/1", "col": "R017"}))
-    print(eval_img("work_dirs/face_detection/split.jpg"))
+    print(eval_img("../../datasets/1/face/0_CFD-WF-014-002-N.jpg"))
