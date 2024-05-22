@@ -149,8 +149,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     cuda: int = args.cuda % torch.cuda.device_count()
 
+    # 全部的softmax重新跑一下，因为出问题了
     for i, row1 in df_v.iloc[cuda * 5:(cuda + 1) * 5].iterrows():
-        for j, row2 in df.iterrows():
+        for j, row2 in df.iloc[[0]].iterrows():
             mmc = ModelChoose(row2["name"], int(row2["param1"]), float(row2["param2"]), 
                               float(row2["param3"]), row1["name"])
             run(cuda, mmc)
