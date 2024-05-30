@@ -26,15 +26,17 @@ class ArchiveModelLayer():
         self._result = []
 
 def _calc_r(arr: list):
+    return np.corrcoef(_calc_raw(arr))
+
+def _calc_raw(arr: list, iter = range(831)):
     index_x = []
     index_y = []
-    for i in range(831):
+    for i in iter:
         for j in range(i + 1):
             if i > j:
                 index_x.append(i)
                 index_y.append(j)
-    r = np.corrcoef(np.concatenate([np.corrcoef(a)[index_x, index_y].reshape(1, -1) for a in arr], axis=0))
-    return r
+    return np.concatenate([np.corrcoef(a)[index_x, index_y].reshape(1, -1) for a in arr], axis=0)
 
 def _random(ndarr: np.ndarray):
     t = np.copy(ndarr)
@@ -44,6 +46,23 @@ def _random(ndarr: np.ndarray):
     # t = np.copy(ndarr).reshape(-1)
     # np.random.shuffle(t)
     # return t.reshape(*ndarr.shape)
+
+def _get_cmap():
+    N = 128
+    vals = np.zeros((N * 2, 4))
+    vals[:, 0] = np.concatenate([np.linspace(21/255, 255/255, N), np.linspace(255/255, 168/255, N)])
+    vals[:, 1] = np.concatenate([np.linspace(43/255, 255/255, N), np.linspace(255/255, 21/255, N)])
+    vals[:, 2] = np.concatenate([np.linspace(168/255, 255/255, N), np.linspace(255/255, 43/255, N)])
+    vals[:, 3] = 1
+    cmap = mpl.colors.ListedColormap(vals)
+    return cmap
+
+def get_df_long(res, layer_name: str, model_name: str):
+    return pd.melt(pd.DataFrame({
+        "face_id": [i + 1 for i in range(831)],
+        "model_name": [model_name] * 831,
+        "layer_name": [layer_name] * 831
+    }).merge(pd.DataFrame(res), how = "left", left_index=True, right_index=True), id_vars=["face_id", "model_name", "layer_name"])
 
 @torch.no_grad()
 def main():
@@ -90,13 +109,7 @@ def stim_calc():
                     get_r(831, 100)])
 
 def render_img_res():
-    N = 128
-    vals = np.zeros((N * 2, 4))
-    vals[:, 0] = np.concatenate([np.linspace(21/255, 255/255, N), np.linspace(255/255, 168/255, N)])
-    vals[:, 1] = np.concatenate([np.linspace(43/255, 255/255, N), np.linspace(255/255, 21/255, N)])
-    vals[:, 2] = np.concatenate([np.linspace(168/255, 255/255, N), np.linspace(255/255, 43/255, N)])
-    vals[:, 3] = 1
-    cmap = mpl.colors.ListedColormap(vals)
+    cmap = _get_cmap()
 
     fig, axes = plt.subplots(2, 3, figsize = (18, 10))
     fig.subplots_adjust(right=0.85)
@@ -139,6 +152,69 @@ def permutation_test():
     p = np.sum(_calc_r(resnet_arr) < r, axis = 0) / r.shape[0]
     return p
 
+def analysis_method2():
+    resnet_arr1 = [np.load("work_dirs/study1_layer1/resnet18.npy"),
+                   np.load("work_dirs/study1_layer1/resnet34.npy"),
+                   np.load("work_dirs/study1_layer1/resnet50.npy"),
+                   np.load("work_dirs/study1_layer1/resnet101.npy"),
+                   np.load("work_dirs/study1_layer1/resnet152.npy")]
+    resnet_arr2 = [np.load("work_dirs/study1_layer2/resnet18.npy"),
+                   np.load("work_dirs/study1_layer2/resnet34.npy"),
+                   np.load("work_dirs/study1_layer2/resnet50.npy"),
+                   np.load("work_dirs/study1_layer2/resnet101.npy"),
+                   np.load("work_dirs/study1_layer2/resnet152.npy")]
+    resnet_arr3 = [np.load("work_dirs/study1_layer3/resnet18.npy"),
+                   np.load("work_dirs/study1_layer3/resnet34.npy"),
+                   np.load("work_dirs/study1_layer3/resnet50.npy"),
+                   np.load("work_dirs/study1_layer3/resnet101.npy"),
+                   np.load("work_dirs/study1_layer3/resnet152.npy")]
+    resnet_arr4 = [np.load("work_dirs/study1_layer4/resnet18.npy"),
+                   np.load("work_dirs/study1_layer4/resnet34.npy"),
+                   np.load("work_dirs/study1_layer4/resnet50.npy"),
+                   np.load("work_dirs/study1_layer4/resnet101.npy"),
+                   np.load("work_dirs/study1_layer4/resnet152.npy")]
+    calc_arr1 = _calc_raw(resnet_arr1)
+    calc_arr2 = _calc_raw(resnet_arr2)
+    calc_arr3 = _calc_raw(resnet_arr3)
+    calc_arr4 = _calc_raw(resnet_arr4)
+
+    df = pd.concat([pd.DataFrame({"model_name": ["18", "34", "50", "101", "152"], "layer": [1] * 5}).merge(pd.DataFrame(calc_arr1), how = "right", left_index=True, right_index=True),
+                    pd.DataFrame({"model_name": ["18", "34", "50", "101", "152"], "layer": [2] * 5}).merge(pd.DataFrame(calc_arr2), how = "right", left_index=True, right_index=True),
+                    pd.DataFrame({"model_name": ["18", "34", "50", "101", "152"], "layer": [3] * 5}).merge(pd.DataFrame(calc_arr3), how = "right", left_index=True, right_index=True),
+                    pd.DataFrame({"model_name": ["18", "34", "50", "101", "152"], "layer": [4] * 5}).merge(pd.DataFrame(calc_arr4), how = "right", left_index=True, right_index=True)])
+    df = df.reset_index(drop=True)
+    df_ = df.iloc[:, 2:]
+
+    cos_r = np.ones(shape = (df_.shape[0], df_.shape[0]))
+    for i in range(df_.shape[0]):
+        for j in range(i, df_.shape[0]):
+            if i == j:
+                continue
+            # cos = np.sum(np.multiply(df_.iloc[i, 0:], df_.iloc[j, 0:])) / (np.sum(df_.iloc[i, 0:]**2) ** 0.5 * np.sum(df_.iloc[j, 0:]**2) ** 0.5)
+            cos = np.corrcoef(df_.iloc[i, :], df_.iloc[j, :])[0][1]
+            cos_r[i][j] = cos
+            cos_r[j][i] = cos
+
+    g = sns.clustermap(cos_r)
+    df_i = df.iloc[g.dendrogram_row.reordered_ind, 0:2]
+    s = []
+    for i, row in df_i.iterrows():
+        s.append(f"ResNet{row['model_name']}_Layer{row['layer']}")
+
+    cmap = _get_cmap()
+    fig = plt.figure(figsize=(5,5))
+    ax = sns.heatmap(g.data.iloc[g.dendrogram_row.reordered_ind, g.dendrogram_col.reordered_ind], cmap = cmap, cbar = False, vmin = 0, vmax = 1)
+    ax.set_xticks(ticks = [i + 0.5 for i in range(len(g.dendrogram_row.reordered_ind))],
+                labels = s, rotation = 90)
+    ax.set_yticks(ticks = [i + 0.5 for i in range(len(g.dendrogram_row.reordered_ind))],
+                labels = s, rotation = 0)
+
+    cax = fig.add_axes([-0.12, -0.03, 0.2, 0.05])
+
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
+    cb = fig.colorbar(sm, cax = cax, orientation='horizontal')
+    fig.savefig("work_dirs/study1/resnet_compare_v2.jpg", bbox_inches = "tight")
+
 if __name__ == "__main__":
-    main()
-    render_img_res()
+    # main()
+    analysis_method2()
