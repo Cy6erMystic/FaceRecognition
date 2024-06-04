@@ -18,10 +18,10 @@
 # 引用
 如果你觉得本项目对你有所帮助，请考虑引用本项目:
 ```
-@misc{
+@misc{Cy6erMystic_FaceRecognition
     author = {Mupsy},
     title = {解析人工智能智慧：深度学习模型的共性探索},
-    year = 2024,
-    url = "https://github.com/Cy6erMystic/FaceRecognition"
+    howpublished = {\url{https://github.com/Cy6erMystic/FaceRecognition} },
+    year = 2024
 }
 ```
