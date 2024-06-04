@@ -173,10 +173,10 @@ def analysis_method2():
                    np.load("work_dirs/study1_layer4/resnet50.npy"),
                    np.load("work_dirs/study1_layer4/resnet101.npy"),
                    np.load("work_dirs/study1_layer4/resnet152.npy")]
-    calc_arr1 = _calc_raw(resnet_arr1)
-    calc_arr2 = _calc_raw(resnet_arr2)
-    calc_arr3 = _calc_raw(resnet_arr3)
-    calc_arr4 = _calc_raw(resnet_arr4)
+    calc_arr1 = 1 - _calc_raw(resnet_arr1)
+    calc_arr2 = 1 - _calc_raw(resnet_arr2)
+    calc_arr3 = 1 - _calc_raw(resnet_arr3)
+    calc_arr4 = 1 - _calc_raw(resnet_arr4)
 
     df = pd.concat([pd.DataFrame({"model_name": ["18", "34", "50", "101", "152"], "layer": [1] * 5}).merge(pd.DataFrame(calc_arr1), how = "right", left_index=True, right_index=True),
                     pd.DataFrame({"model_name": ["18", "34", "50", "101", "152"], "layer": [2] * 5}).merge(pd.DataFrame(calc_arr2), how = "right", left_index=True, right_index=True),
@@ -195,18 +195,18 @@ def analysis_method2():
             cos_r[i][j] = cos
             cos_r[j][i] = cos
 
-    g = sns.clustermap(cos_r)
-    df_i = df.iloc[g.dendrogram_row.reordered_ind, 0:2]
+    # g = sns.clustermap(cos_r)
+    df_i = df
     s = []
     for i, row in df_i.iterrows():
         s.append(f"ResNet{row['model_name']}_Layer{row['layer']}")
 
     cmap = _get_cmap()
     fig = plt.figure(figsize=(5,5))
-    ax = sns.heatmap(g.data.iloc[g.dendrogram_row.reordered_ind, g.dendrogram_col.reordered_ind], cmap = cmap, cbar = False, vmin = 0, vmax = 1)
-    ax.set_xticks(ticks = [i + 0.5 for i in range(len(g.dendrogram_row.reordered_ind))],
+    ax = sns.heatmap(cos_r, cmap = cmap, cbar = False, vmin = 0, vmax = 1)
+    ax.set_xticks(ticks = [i + 0.5 for i in range(len(s))],
                 labels = s, rotation = 90)
-    ax.set_yticks(ticks = [i + 0.5 for i in range(len(g.dendrogram_row.reordered_ind))],
+    ax.set_yticks(ticks = [i + 0.5 for i in range(len(s))],
                 labels = s, rotation = 0)
 
     cax = fig.add_axes([-0.12, -0.03, 0.2, 0.05])
