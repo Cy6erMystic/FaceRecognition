@@ -83,11 +83,36 @@ def step2():
     np.save("./work_dirs/study4/less.npy", np.array(less))
 
 def step3():
+    # 绘制噪点图的平均结果
     filename = "0_CFD-LF-236-221-N.jpg"
     im = cv2.imread("../../datasets/1/face/{}".format(filename), cv2.IMREAD_COLOR) # bgr
     im: np.ndarray = ((im / 255) - 0.5) / 0.5
 
-    noise = RCIC.normalized_noise(np.load("./work_dirs/study4/less.npy").mean(axis = 0))
+    l: np.ndarray = np.load("./work_dirs/study4/less.npy")
+    m: np.ndarray = np.load("./work_dirs/study4/more.npy")
+    for i, nn in enumerate(np.concatenate([l, m], axis = 0)):
+        print(i)
+        img_a = np.zeros(im.shape)
+        img_r = np.zeros(im.shape)
+        img_a[:,:,0] = np.mean([im[:,:,0], nn], axis = 0)
+        img_a[:,:,1] = np.mean([im[:,:,1], nn], axis = 0)
+        img_a[:,:,2] = np.mean([im[:,:,2], nn], axis = 0)
+        img_r[:,:,0] = np.mean([im[:,:,0], - nn], axis = 0)
+        img_r[:,:,1] = np.mean([im[:,:,1], - nn], axis = 0)
+        img_r[:,:,2] = np.mean([im[:,:,2], - nn], axis = 0)
+        plt.figure()
+        plt.imshow(img_a[:,:,[2,1,0]] / 2 + 0.5)
+        plt.axis("off")
+        plt.savefig("./work_dirs/study5/add/{}.jpg".format(i), bbox_inches = "tight")
+        plt.close()
+
+        plt.figure()
+        plt.imshow(img_r[:,:,[2,1,0]] / 2 + 0.5)
+        plt.axis("off")
+        plt.savefig("./work_dirs/study5/reduce/{}.jpg".format(i), bbox_inches = "tight")
+        plt.close()
+
+    noise = RCIC.normalized_noise(l.mean(axis = 0))
     img_add = np.zeros(im.shape)
     img_reduce = np.zeros(im.shape)
     img_add[:,:,0] = np.mean([im[:,:,0], noise], axis = 0)
@@ -108,6 +133,7 @@ def step3():
     plt.savefig("./work_dirs/study4/reduce.jpg", bbox_inches = "tight")
 
 def step4():
+    # 绘制聚簇分析结果
     filename = "0_CFD-LF-236-221-N.jpg"
     im = cv2.imread("../../datasets/1/face/{}".format(filename), cv2.IMREAD_COLOR) # bgr
     im: np.ndarray = ((im / 255) - 0.5) / 0.5
@@ -128,4 +154,4 @@ def step4():
     plt.savefig("./work_dirs/study4/cluster.jpg", bbox_inches = "tight")
 
 if __name__ == "__main__":
-    step4()
+    step3()

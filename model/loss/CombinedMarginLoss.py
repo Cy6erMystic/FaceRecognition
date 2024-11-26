@@ -5,11 +5,11 @@ from torch.nn.functional import linear, normalize
 
 class CombinedMarginLoss(torch.nn.Module):
     """
-    若m1 = 1, 则不进行A-Softmax
+    若m1 = 1, 则不进行A-Softmax - SphereFace
     
-    若m2 = 0, 则不进行Arc
+    若m2 = 0, 则不进行Arc - ArcFace
     
-    若m3 = 0, 则不进行LMCL
+    若m3 = 0, 则不进行LMCL - CosFace
     """
     def __init__(self, 
                  s, 
